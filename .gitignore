@@ -30,3 +30,7 @@ build
 
 
 *.jpg
+
+.idea
+
+*.iml
