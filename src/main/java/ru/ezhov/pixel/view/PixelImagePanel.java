@@ -51,6 +51,8 @@ public class PixelImagePanel extends JPanel {
     }
 
     private void lines() {
+        removePixels();
+
         if (this.paintPixels) {
             paintPixels();
         } else {
@@ -127,16 +129,16 @@ public class PixelImagePanel extends JPanel {
         if (bufferedImage != null) {
             pixels.forEach(this::add);
 
-            repaint();
             revalidate();
+            repaint();
         }
     }
 
     private void removePixels() {
         removeAll();
 
-        repaint();
         revalidate();
+        repaint();
     }
 
     private void createPixels() {
