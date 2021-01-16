@@ -4,6 +4,7 @@ import ru.ezhov.pixel.domain.NumberService;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -181,9 +182,18 @@ public class PixelImagePanel extends JPanel {
 
             this.paint(g);
             g.dispose();
-            File f = new File("result.jpg");
-            ImageIO.write(bi, "jpg", f);
-            return Optional.of(f);
+
+            JFileChooser fileChooser = new JFileChooser();
+
+            int answer = fileChooser.showSaveDialog(PixelImagePanel.this);
+
+            if (answer == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+
+                ImageIO.write(bi, "png", file);
+                return Optional.of(file);
+            }
+
         }
         return Optional.empty();
     }
@@ -211,7 +221,8 @@ public class PixelImagePanel extends JPanel {
 
             initText(this.originalColor);
 
-            setBackground(Color.white);
+            setBackground(Color.WHITE);
+            setOpaque(true);
             setHorizontalAlignment(SwingConstants.CENTER);
             setBounds(x, y, w, h);
             setBorder(BorderFactory.createLineBorder(Color.BLACK));
