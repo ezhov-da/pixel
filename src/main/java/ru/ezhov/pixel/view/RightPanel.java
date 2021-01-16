@@ -5,7 +5,12 @@ import ru.ezhov.pixel.infrastructure.CoderoadRuPixelayeService;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -38,11 +43,17 @@ public class RightPanel extends JPanel implements Pixeler {
         JCheckBox checkBoxPaintToBlack = new JCheckBox("Paint to black");
         checkBoxPaintToBlack.addActionListener(e -> {
             if (checkBoxPaintToBlack.isSelected()) {
-                pixelImagePanel.paintNotWhitePixelTo(Color.black);
+                pixelImagePanel.paintNotWhitePixelTo();
 
             } else {
                 pixelImagePanel.resetColor();
             }
+        });
+
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(new JLabel().getFont().getSize(), 5, 500, 1));
+        spinner.addChangeListener(e -> {
+            int val = (Integer) spinner.getModel().getValue();
+            pixelImagePanel.changeFontSize(val);
         });
 
         JButton saveImage = new JButton("Save image");
@@ -60,6 +71,7 @@ public class RightPanel extends JPanel implements Pixeler {
         panel.add(checkBoxImage);
         panel.add(checkBox);
         panel.add(checkBoxPaintToBlack);
+        panel.add(spinner);
         panel.add(saveImage);
 
         add(panel, BorderLayout.SOUTH);

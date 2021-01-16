@@ -3,12 +3,17 @@ package ru.ezhov.pixel.view;
 import ru.ezhov.pixel.domain.NumberService;
 
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -61,14 +66,8 @@ public class PixelImagePanel extends JPanel {
 
     }
 
-    public void paintNotWhitePixelTo(Color color) {
-        pixels.forEach(p -> {
-            if (!p.isWhiteColor()) {
-                p.setOpaque(true);
-                p.setBackground(color);
-                p.repaint();
-            }
-        });
+    public void paintNotWhitePixelTo() {
+        pixels.forEach(Pixel::fillBlack);
 
         repaint();
         revalidate();
@@ -84,6 +83,17 @@ public class PixelImagePanel extends JPanel {
         revalidate();
     }
 
+    public void changeFontSize(int size) {
+        pixels.forEach(p -> {
+            Font font = p.getFont();
+            Font newFonr = new Font(font.getName(), font.getStyle(), size);
+            p.setFont(newFonr);
+        });
+
+        repaint();
+        revalidate();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -93,35 +103,11 @@ public class PixelImagePanel extends JPanel {
         if (paintImage) {
             paintImage(graphics2D);
         }
-        paintLines(graphics2D);
     }
 
     private void paintImage(Graphics2D graphics2D) {
         if (bufferedImage != null) {
             graphics2D.drawImage(bufferedImage, 0, 0, null);
-        }
-    }
-
-    private void paintLines(Graphics2D graphics2D) {
-        if (bufferedImage != null) {
-            int counter = pixelSize;
-
-            while (bufferedImage.getWidth() > counter) {
-                graphics2D.setColor(Color.BLACK);
-                graphics2D.drawLine(counter, 0, counter, bufferedImage.getHeight());
-
-                maxWidth = counter;
-                counter += pixelSize;
-            }
-
-            counter = pixelSize;
-            while (bufferedImage.getHeight() > counter) {
-                graphics2D.setColor(Color.BLACK);
-                graphics2D.drawLine(0, counter, bufferedImage.getWidth(), counter);
-
-                maxHeight = counter;
-                counter += pixelSize;
-            }
         }
     }
 
@@ -145,8 +131,6 @@ public class PixelImagePanel extends JPanel {
         if (bufferedImage != null) {
             pixels.clear();
 
-            NumberService numberService = new NumberService();
-
             int counterY = 0;
 
             while (bufferedImage.getHeight() > counterY) {
@@ -155,20 +139,24 @@ public class PixelImagePanel extends JPanel {
 
                     int color = bufferedImage.getRGB(counterX + 1, counterY + 1);
 
-                    String name;
-                    if (Color.WHITE.equals(new Color(color))) {
-                        name = numberService.odd() + "";
-                    } else {
-                        name = numberService.even() + "";
-                    }
 
-                    Pixel label = new Pixel(counterX, counterY, pixelSize, pixelSize, name, new Color(color));
+                    Pixel label = new Pixel(counterX, counterY, pixelSize, pixelSize, new Color(color));
+                    label.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            label.paintPixel();
+                            PixelImagePanel.this.repaint();
+                        }
+                    });
 
                     pixels.add(label);
 
                     counterX += pixelSize;
+                    maxWidth = counterX;
                 }
                 counterY += pixelSize;
+                maxHeight = counterY;
+
             }
         }
     }
@@ -179,6 +167,18 @@ public class PixelImagePanel extends JPanel {
             int h = maxHeight;
             BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
             Graphics2D g = bi.createGraphics();
+
+            RenderingHints rh = new RenderingHints(
+                    RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            rh.add(new RenderingHints(
+                    RenderingHints.KEY_ALPHA_INTERPOLATION,
+                    RenderingHints.VALUE_COLOR_RENDER_QUALITY));
+            rh.add(new RenderingHints(
+                    RenderingHints.KEY_RENDERING,
+                    RenderingHints.VALUE_RENDER_QUALITY));
+            g.setRenderingHints(rh);
+
             this.paint(g);
             g.dispose();
             File f = new File("result.jpg");
@@ -193,29 +193,65 @@ public class PixelImagePanel extends JPanel {
         private final int y;
         private final int w;
         private final int h;
-        private final Color color;
+        private final Color originalColor;
+        private Color newColor;
+        private String text;
 
         public Pixel(int x,
                      int y,
                      int w,
                      int h,
-                     String text,
-                     Color color
+                     Color originalColor
         ) {
-            super(text);
             this.x = x;
             this.y = y;
             this.h = h;
             this.w = w;
-            this.color = color;
+            this.originalColor = originalColor;
+
+            initText(this.originalColor);
 
             setBackground(Color.white);
             setHorizontalAlignment(SwingConstants.CENTER);
             setBounds(x, y, w, h);
+            setBorder(BorderFactory.createLineBorder(Color.BLACK));
         }
 
-        public boolean isWhiteColor() {
-            return Color.WHITE.equals(color);
+        private void initText(Color color) {
+            NumberService numberService = new NumberService();
+            if (Color.WHITE.equals(color)) {
+                text = numberService.odd() + "";
+            } else {
+                text = numberService.even() + "";
+            }
+            setText(text);
+        }
+
+        public void paintPixel() {
+            if (newColor == null) {
+                newColor = Color.BLACK;
+            } else if (Color.WHITE.equals(newColor)) {
+                newColor = Color.BLACK;
+            } else {
+                newColor = Color.WHITE;
+            }
+
+            paintNewColor();
+        }
+
+        private void paintNewColor() {
+            initText(newColor);
+
+            setOpaque(true);
+            setBackground(newColor);
+            repaint();
+        }
+
+        private void fillBlack() {
+            if (!Color.WHITE.equals(this.originalColor)) {
+                this.newColor = Color.BLACK;
+                paintNewColor();
+            }
         }
     }
 
